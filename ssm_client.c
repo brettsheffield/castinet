@@ -89,9 +89,12 @@ int main(int argc, char **argv)
 			goto main_fail;
 		}
 		memset(&grp, 0, sizeof(grp));
-		/* FIXME: use struct sockaddr */
-		memcpy(&grp.gsr_group, castaddr, sizeof(struct sockaddr_in6));
-		memcpy(&grp.gsr_source, srcaddr, sizeof(struct sockaddr_in6));
+		memcpy(&grp.gsr_group,
+				(struct sockaddr_in6*)(castaddr->ai_addr),
+				sizeof(struct sockaddr_in6));
+		memcpy(&grp.gsr_source,
+				(struct sockaddr_in6*)(srcaddr->ai_addr),
+				sizeof(struct sockaddr_in6));
 		grp.gsr_interface = 0;
 		if (setsockopt(s_in, IPPROTO_IPV6, MCAST_JOIN_SOURCE_GROUP,
 			&grp, sizeof(grp)) == -1)
