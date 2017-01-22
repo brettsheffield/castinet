@@ -10,6 +10,8 @@
 
 char *addr = "ff3e::1";
 char *port = "4242";
+int ttl = 9;
+int loop = 1;
 
 int main()
 {
@@ -35,7 +37,7 @@ int main()
 	}
 
 	/* set TTL */
-	opt = 1;
+	opt = ttl;
 	if (setsockopt(s_out, IPPROTO_IPV6, IPV6_MULTICAST_HOPS, &opt,
 				sizeof(opt)) != 0)
 	{
@@ -44,7 +46,7 @@ int main()
 	}
 
 	/* set loopback */
-	opt = 1;
+	opt = loop;
 	if (setsockopt(s_out, IPPROTO_IPV6, IPV6_MULTICAST_LOOP, &opt,
 				sizeof(opt)) != 0)
 	{
