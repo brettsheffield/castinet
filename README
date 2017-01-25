@@ -2,15 +2,15 @@ castinet - small ipv6-only ASM/SSM mode multicast source and listener test progr
 
 Just a really simple pair of programs for testing multicast reachability.
 
-The source program sends the specified message to the multicast address and port provided once per second until stopped with a CTRL-c / SIGINT.
+The source program (castinet) sends the specified message to the multicast address and port provided once per second until stopped with a CTRL-c / SIGINT.
 
 The listener program listens for inbound multicast messages and prints them as they arrive.
 
 Usage:
 
- source [--addr multicast address] [--port multicast port] [--ttl ttl] [--loop 0|1] message
+ castinet [--addr multicast address] [--port multicast port] [--ttl ttl] [--loop 0|1] message
 
- eg. source --addr ff3e::1 --port 4242 `hostname`
+ eg. castinet --addr ff3e::1 --port 4242 `hostname`
 
  listener [--addr multicast address] [--port port][--src source address]
 
