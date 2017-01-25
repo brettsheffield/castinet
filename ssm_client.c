@@ -11,6 +11,7 @@
 
 char *addr = "ff3e::1";
 char *port = "4242";
+char *src = NULL;
 
 void print_usage(char *prog, int ret)
 {
@@ -21,6 +22,34 @@ void print_usage(char *prog, int ret)
 void getaddrinfo_error(int e)
 {
 	printf("getaddrinfo error: %i\n", e);
+}
+
+void process_arg(int *i, char **argv)
+{
+        if (strcmp(argv[*i], "--help") == 0) {
+                print_usage(argv[0], 0);
+        }
+        else if (strcmp(argv[*i], "--addr") == 0) {
+                addr = argv[++(*i)];
+        }
+        else if (strcmp(argv[*i], "--port") == 0) {
+                port = argv[++(*i)];
+        }
+        else if (strcmp(argv[*i], "--src") == 0) {
+                src = argv[++(*i)];
+        }
+        else {
+                print_usage(argv[0], 1);
+        }
+}
+
+void process_args(int argc, char **argv)
+{
+        int i;
+
+        if (argc > 1) {
+                for (i = 1; i < argc; ++i) process_arg(&i, argv);
+        }
 }
 
 int main(int argc, char **argv)
@@ -35,22 +64,8 @@ int main(int argc, char **argv)
 	struct ipv6_mreq req;
 	struct group_source_req grp;
 	char buf[1024];
-	char *src = NULL;
 
-	/* check args */
-	if (argc > 1) {
-		if (argc == 3) {
-			if (strcmp(argv[1], "--src") == 0) {
-				src = argv[2];
-			}
-			else {
-				print_usage(argv[0], 1);
-			}
-		}
-		else {
-			print_usage(argv[0], 1);
-		}
-	}
+	process_args(argc, argv);
 
 	hints.ai_family = AF_INET6;
 	hints.ai_socktype = SOCK_DGRAM;
