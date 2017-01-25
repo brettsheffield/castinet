@@ -8,7 +8,7 @@ The listener program listens for inbound multicast messages and prints them as t
 
 Usage:
 
- source [--addr multicast address] [--port multicast port] message
+ source [--addr multicast address] [--port multicast port] [--ttl ttl] [--loop 0|1] message
 
  eg. source --addr ff3e::1 --port 4242 `hostname`
 
