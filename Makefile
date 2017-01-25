@@ -20,15 +20,15 @@
  
 COPTS=-Wall -Werror -g
 
-all: listener source
+all: listener castinet
 
 listener: listener.c
 	gcc ${COPTS} -o listener listener.c
 
-source: source.c
-	gcc ${COPTS} -o source source.c
+castinet: source.c
+	gcc ${COPTS} -o castinet source.c
 
 .PHONY: clean
 
 clean:
-	rm listener source
+	rm listener castinet
