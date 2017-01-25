@@ -20,6 +20,7 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <ctype.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <signal.h>
@@ -34,8 +35,8 @@ char *addr = "ff3e::1";
 char *port = "4242";
 char *msg = NULL;
 char *tmp;
-int ttl = 9;
-int loop = 1;
+long ttl = 9;
+long loop = 1;
 
 void exit_program(int ret)
 {
@@ -43,9 +44,28 @@ void exit_program(int ret)
 	_exit(ret);
 }
 
+int is_numeric(char *s)
+{
+	/* return true iff all chars are digits */
+	int i;
+	for (i = 0; i < strlen(s); i++) {
+		if (!isdigit(s[i]))
+			return 0;
+	}
+	return 1;
+}
+
+long go_long(char *s)
+{
+	if (is_numeric(s)) {
+		return strtol(s, NULL, 10);
+	}
+	return -1;
+}
+
 void print_usage(char *prog, int ret)
 {
-	printf("usage: %s [--addr multicast address] [--port multicast port] message\n", prog);
+	printf("usage: %s [--addr multicast address] [--port multicast port] [--ttl ttl] [--loop 0|1] message\n", prog);
 	_exit(ret);
 }
 
@@ -59,6 +79,16 @@ void process_arg(int *i, char **argv)
 	}
 	else if (strcmp(argv[*i], "--port") == 0) {
 		port = argv[++(*i)];
+	}
+	else if (strcmp(argv[*i], "--ttl") == 0) {
+		ttl = go_long(argv[++(*i)]);
+		if (ttl < 0)
+			print_usage(argv[0], 1);
+	}
+	else if (strcmp(argv[*i], "--loop") == 0) {
+		loop = go_long(argv[++(*i)]);
+		if (loop < 0 || loop > 1)
+			print_usage(argv[0], 1);
 	}
 	else {
 		print_usage(argv[0], 1);
