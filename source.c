@@ -37,6 +37,7 @@ char *msg = NULL;
 char *tmp;
 long ttl = 9;
 long loop = 1;
+long delay = 1;
 
 void exit_program(int ret)
 {
@@ -65,7 +66,7 @@ long go_long(char *s)
 
 void print_usage(char *prog, int ret)
 {
-	printf("usage: %s [--addr multicast address] [--port multicast port] [--ttl ttl] [--loop 0|1] message\n", prog);
+	printf("usage: %s [--addr multicast address] [--port multicast port] [--ttl ttl] [--loop 0|1] [--delay seconds] message\n", prog);
 	_exit(ret);
 }
 
@@ -88,6 +89,11 @@ void process_arg(int *i, char **argv)
 	else if (strcmp(argv[*i], "--loop") == 0) {
 		loop = go_long(argv[++(*i)]);
 		if (loop < 0 || loop > 1)
+			print_usage(argv[0], 1);
+	}
+	else if (strcmp(argv[*i], "--delay") == 0) {
+		delay = go_long(argv[++(*i)]);
+		if (ttl < 0)
 			print_usage(argv[0], 1);
 	}
 	else {
@@ -184,7 +190,7 @@ int main(int argc, char **argv)
 	for (;;) {
 		sendto(s_out, msg, strlen(msg), 0, castaddr->ai_addr,
 				castaddr->ai_addrlen);
-		sleep(1);
+		sleep(delay);
 	}
 
 	/* not reached */
