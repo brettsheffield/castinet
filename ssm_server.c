@@ -2,6 +2,7 @@
 
 #include <netdb.h>
 #include <netinet/in.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -15,6 +16,12 @@ char *msg = NULL;
 char *tmp;
 int ttl = 9;
 int loop = 1;
+
+void exit_program(int ret)
+{
+	free(msg);
+	_exit(ret);
+}
 
 void print_usage(char *prog, int ret)
 {
@@ -68,12 +75,24 @@ void process_args(int argc, char **argv)
 	}
 }
 
+void sig_handler(int signo)
+{
+	switch (signo) {
+	case SIGINT:
+		exit_program(0);
+	default:
+		break;
+	}
+}
+
 int main(int argc, char **argv)
 {
 	int s_out;
 	int opt;
 	struct addrinfo *castaddr = NULL;
 	struct addrinfo hints = {0};
+
+	signal(SIGINT, sig_handler);
 
 	process_args(argc, argv);
 
@@ -118,7 +137,7 @@ int main(int argc, char **argv)
 		sleep(1);
 	}
 
-	free(msg);
+	/* not reached */
 
 	return 0;
 
