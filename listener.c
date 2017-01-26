@@ -23,15 +23,25 @@
 #include <net/if.h>
 #include <netdb.h>
 #include <netinet/in.h>
+#include <signal.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
 
-char *addr = "ff3e::1";
+#define default_group "ff3e::1"
+char **addrs = NULL;
+int groups = 0;
 char *port = "4242";
 char *src = NULL;
+
+void exit_program(int ret)
+{
+	free(addrs);
+        _exit(ret);
+}
 
 void print_usage(char *prog, int ret)
 {
@@ -46,11 +56,15 @@ void getaddrinfo_error(int e)
 
 void process_arg(int *i, char **argv)
 {
+	char *addr = NULL;
+
         if (strcmp(argv[*i], "--help") == 0) {
                 print_usage(argv[0], 0);
         }
         else if (strcmp(argv[*i], "--addr") == 0) {
                 addr = argv[++(*i)];
+                addrs = realloc(addrs, sizeof(addrs) + sizeof(char *));
+                addrs[groups++] = addr;
         }
         else if (strcmp(argv[*i], "--port") == 0) {
                 port = argv[++(*i)];
@@ -72,11 +86,22 @@ void process_args(int argc, char **argv)
         }
 }
 
+void sig_handler(int signo)
+{
+        switch (signo) {
+        case SIGINT:
+                exit_program(0);
+        default:
+                break;
+        }
+}
+
 int main(int argc, char **argv)
 {
 	int s_in;
 	int l;
 	int e;
+	int g;
 	struct addrinfo *castaddr = NULL;
 	struct addrinfo *localaddr = NULL;
 	struct addrinfo *srcaddr = NULL;
@@ -84,17 +109,15 @@ int main(int argc, char **argv)
 	struct ipv6_mreq req;
 	struct group_source_req grp;
 	char buf[1024];
+	char *addr;
 
 	process_args(argc, argv);
+
+	signal(SIGINT, sig_handler);
 
 	hints.ai_family = AF_INET6;
 	hints.ai_socktype = SOCK_DGRAM;
 	hints.ai_flags = AI_NUMERICHOST;
-	if ((e = getaddrinfo(addr, port, &hints, &castaddr)) != 0) {
-		perror("getaddrinfo (out)");
-		getaddrinfo_error(e);
-		goto main_fail;
-	}
 
 	/* find local address to bind to */
 	hints.ai_flags = AI_PASSIVE;
@@ -116,52 +139,62 @@ int main(int argc, char **argv)
 		goto main_fail;
 	}
 
-	/* join multicast group */
-	if (src) {
-		printf("SSM mode (source: %s)\n", src);
-		if ((e = getaddrinfo(src, port, &hints, &srcaddr)) != 0) {
+	/* join multicast groups */
+	for (g = 0; g < groups;) {
+		addr = addrs[g++];
+		if ((e = getaddrinfo(addr, port, &hints, &castaddr)) != 0) {
+			perror("getaddrinfo (out)");
 			getaddrinfo_error(e);
 			goto main_fail;
 		}
-		memset(&grp, 0, sizeof(grp));
-		memcpy(&grp.gsr_group,
-				(struct sockaddr_in6*)(castaddr->ai_addr),
-				sizeof(struct sockaddr_in6));
-		memcpy(&grp.gsr_source,
-				(struct sockaddr_in6*)(srcaddr->ai_addr),
-				sizeof(struct sockaddr_in6));
-		grp.gsr_interface = 0;
-		if (setsockopt(s_in, IPPROTO_IPV6, MCAST_JOIN_SOURCE_GROUP,
-			&grp, sizeof(grp)) == -1)
-		{
-			perror("multicast join");
-			goto main_fail;
+		if (src) {
+			printf("SSM mode (source: %s) joining %s\n", src, addr);
+			if ((e = getaddrinfo(src, port, &hints, &srcaddr)) != 0) {
+				getaddrinfo_error(e);
+				goto main_fail;
+			}
+			memset(&grp, 0, sizeof(grp));
+			memcpy(&grp.gsr_group,
+					(struct sockaddr_in6*)(castaddr->ai_addr),
+					sizeof(struct sockaddr_in6));
+			memcpy(&grp.gsr_source,
+					(struct sockaddr_in6*)(srcaddr->ai_addr),
+					sizeof(struct sockaddr_in6));
+			grp.gsr_interface = 0;
+			if (setsockopt(s_in, IPPROTO_IPV6, MCAST_JOIN_SOURCE_GROUP,
+				&grp, sizeof(grp)) == -1)
+			{
+				perror("multicast join");
+				goto main_fail;
+			}
+			freeaddrinfo(srcaddr);
 		}
-		freeaddrinfo(srcaddr);
-	}
-	else {
-		printf("ASM modde\n");
-		memcpy(&req.ipv6mr_multiaddr,
-			&((struct sockaddr_in6*)(castaddr->ai_addr))->sin6_addr,
-			sizeof(req.ipv6mr_multiaddr));
+		else {
+			printf("ASM mode join %s\n", addr);
+			memcpy(&req.ipv6mr_multiaddr,
+				&((struct sockaddr_in6*)(castaddr->ai_addr))->sin6_addr,
+				sizeof(req.ipv6mr_multiaddr));
 
-		req.ipv6mr_interface = 0; /* default interface */
-		if (setsockopt(s_in, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP,
-			&req, sizeof(req)) != 0)
-		{
-			perror("multicast join");
-			goto main_fail;
+			req.ipv6mr_interface = 0; /* default interface */
+			if (setsockopt(s_in, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP,
+				&req, sizeof(req)) != 0)
+			{
+				perror("multicast join");
+				goto main_fail;
+			}
 		}
+		freeaddrinfo(castaddr);
 	}
 
 	freeaddrinfo(localaddr);
-	freeaddrinfo(castaddr);
 
 	for (;;) {
 		l = recvfrom(s_in, buf, sizeof(buf)-1, 0, NULL, NULL);
 		buf[l] = '\0';
 		printf("%s\n", buf);
 	}
+
+	/* not reached */
 
 	return 0;
 

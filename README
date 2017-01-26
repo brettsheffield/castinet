@@ -16,6 +16,8 @@ Usage:
 
 Providing a multicast source address to the listener with --src switches to Single Source Multicast (SSM) mode from the default Any Source Multicast (ASM) mode.
 
+Multiple multicast groups can be joined by supplying more than one --addr argument.
+
 
 Brett Sheffield <brett@gladserv.com>
 2017-01-25
