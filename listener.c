@@ -139,6 +139,13 @@ int main(int argc, char **argv)
 		goto main_fail;
 	}
 
+	if (src) {
+		if ((e = getaddrinfo(src, port, &hints, &srcaddr)) != 0) {
+			getaddrinfo_error(e);
+			goto main_fail;
+		}
+	}
+
 	/* join multicast groups */
 	for (g = 0; g < groups;) {
 		addr = addrs[g++];
@@ -149,10 +156,6 @@ int main(int argc, char **argv)
 		}
 		if (src) {
 			printf("SSM mode (source: %s) joining %s\n", src, addr);
-			if ((e = getaddrinfo(src, port, &hints, &srcaddr)) != 0) {
-				getaddrinfo_error(e);
-				goto main_fail;
-			}
 			memset(&grp, 0, sizeof(grp));
 			memcpy(&grp.gsr_group,
 					(struct sockaddr_in6*)(castaddr->ai_addr),
@@ -167,7 +170,6 @@ int main(int argc, char **argv)
 				perror("multicast join");
 				goto main_fail;
 			}
-			freeaddrinfo(srcaddr);
 		}
 		else {
 			printf("ASM mode join %s\n", addr);
@@ -186,6 +188,7 @@ int main(int argc, char **argv)
 		freeaddrinfo(castaddr);
 	}
 
+	freeaddrinfo(srcaddr);
 	freeaddrinfo(localaddr);
 
 	for (;;) {
