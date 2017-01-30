@@ -24,7 +24,7 @@ LIBS=-lcrypto
 all: listener castinet
 
 listener: listener.c
-	gcc ${COPTS} -o listener listener.c
+	gcc ${COPTS} -o listener listener.c ${LIBS}
 
 castinet: source.c
 	gcc ${COPTS} -o castinet source.c ${LIBS}

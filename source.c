@@ -69,7 +69,7 @@ long go_long(char *s)
 
 void print_usage(char *prog, int ret)
 {
-	printf("usage: %s [--addr multicast address] [--port multicast port] [--ttl ttl] [--loop 0|1] [--delay seconds] message\n", prog);
+	printf("usage: %s [--addr multicast address] [--port multicast port] [--grp groupname] [--ttl ttl] [--loop 0|1] [--delay seconds] message\n", prog);
 	_exit(ret);
 }
 
