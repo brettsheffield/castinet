@@ -19,6 +19,7 @@
 # If not, see <http://www.gnu.org/licenses/>.
  
 COPTS=-Wall -Werror -g
+LIBS=-lcrypto
 
 all: listener castinet
 
@@ -26,7 +27,7 @@ listener: listener.c
 	gcc ${COPTS} -o listener listener.c
 
 castinet: source.c
-	gcc ${COPTS} -o castinet source.c
+	gcc ${COPTS} -o castinet source.c ${LIBS}
 
 .PHONY: clean
 
