@@ -8,11 +8,11 @@ The listener program listens for inbound multicast messages and prints them as t
 
 Usage:
 
- castinet [--addr multicast address] [--port multicast port] [--ttl ttl] [--loop 0|1] message
+ castinet [--addr multicast address] [--port multicast port] [--grp groupname] [--ttl ttl] [--loop 0|1] message
 
  eg. castinet --addr ff3e::1 --port 4242 `hostname`
 
- listener [--addr multicast address] [--port port][--src source address]
+ listener [--addr multicast address] [--port port] [--grp groupname] [--src source address]
 
 Providing a multicast source address to the listener with --src switches to Single Source Multicast (SSM) mode from the default Any Source Multicast (ASM) mode.
 
