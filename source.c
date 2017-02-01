@@ -30,7 +30,7 @@
 #include <unistd.h>
 #include "castinet.h"
 
-char *addr = "ff3e::1";
+char *addr = "ff3e::";
 char *port = "4242";
 char *msg = NULL;
 char *grp = NULL;

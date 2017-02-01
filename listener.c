@@ -30,11 +30,13 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include "castinet.h"
 
-#define default_group "ff3e::1"
+#define default_group "ff3e::"
 char **addrs = NULL;
 int groups = 0;
 char *port = "4242";
+char *groupname = NULL;
 char *src = NULL;
 
 void exit_program(int ret)
@@ -45,7 +47,7 @@ void exit_program(int ret)
 
 void print_usage(char *prog, int ret)
 {
-	printf("usage: %s [--addr multicast address] [--port port][--src source address]\n", prog);
+	printf("usage: %s [--addr multicast address] [--port port] [--grp groupname] [--src source address]\n", prog);
 	_exit(ret);
 }
 
@@ -69,6 +71,10 @@ void process_arg(int *i, char **argv)
         else if (strcmp(argv[*i], "--port") == 0) {
                 port = argv[++(*i)];
         }
+	else if (strcmp(argv[*i], "--grp") == 0) {
+		groupname = argv[++(*i)];
+	        printf("group: %s\n", groupname);
+	}
         else if (strcmp(argv[*i], "--src") == 0) {
                 src = argv[++(*i)];
         }
@@ -110,6 +116,7 @@ int main(int argc, char **argv)
 	struct group_source_req grp;
 	char buf[1024];
 	char *addr;
+	char txtaddr[INET6_ADDRSTRLEN];
 
 	process_args(argc, argv);
 
@@ -146,9 +153,20 @@ int main(int argc, char **argv)
 		}
 	}
 
+	if (groups == 0) {
+		addr = default_group;
+                addrs = realloc(addrs, sizeof(addrs) + sizeof(char *));
+                addrs[groups++] = addr;
+	}
+
 	/* join multicast groups */
-	for (g = 0; g < groups;) {
-		addr = addrs[g++];
+	for (g = 0; g < groups; g++) {
+		addr = addrs[g];
+		if (hashgroup(addr, groupname, txtaddr) != 0) {
+			return 1;
+		}
+		if (groupname)
+			addr = txtaddr;
 		if ((e = getaddrinfo(addr, port, &hints, &castaddr)) != 0) {
 			perror("getaddrinfo (out)");
 			getaddrinfo_error(e);
