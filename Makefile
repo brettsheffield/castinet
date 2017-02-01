@@ -23,13 +23,22 @@ LIBS=-lcrypto
 
 all: listener castinet
 
-listener: listener.c
-	gcc ${COPTS} -o listener listener.c ${LIBS}
+listener: listener.o castinet.o
+	gcc ${COPTS} -o listener listener.o castinet.o ${LIBS}
 
-castinet: source.c
-	gcc ${COPTS} -o castinet source.c ${LIBS}
+castinet: source.o castinet.o
+	gcc ${COPTS} -o castinet source.o castinet.o ${LIBS}
+
+listener.o: listener.c
+	gcc ${COPTS} -c listener.c ${LIBS}
+
+source.o: source.c
+	gcc ${COPTS} -c source.c ${LIBS}
+
+castinet.o: castinet.c castinet.h
+	gcc ${COPTS} -c castinet.c ${LIBS}
 
 .PHONY: clean
 
 clean:
-	rm listener castinet
+	rm listener castinet *.o
