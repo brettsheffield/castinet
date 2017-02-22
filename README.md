@@ -25,5 +25,6 @@ Multiple multicast groups can be joined by supplying more than one --addr argume
 the groupname is hashed to find the multicast group to join
 
 
-Brett Sheffield <brett@gladserv.com>
+Brett Sheffield `<brett@gladserv.com>`
+
 2017-01-25
