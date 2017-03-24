@@ -20,8 +20,12 @@
 
 #include <arpa/inet.h>
 #include <openssl/sha.h>
+#include <signal.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include "castinet.h"
 
 int hashgroup(char *baseaddr, char *groupname, char *hashaddr)
 {
@@ -47,4 +51,20 @@ int hashgroup(char *baseaddr, char *groupname, char *hashaddr)
 	}
 
 	return 0;
+}
+
+void print_usage(char *prog, int ret)
+{
+        printf(program_usage);
+        _exit(ret);
+}
+
+void sig_handler(int signo)
+{
+        switch (signo) {
+        case SIGINT:
+                exit_program(0);
+        default:
+                break;
+        }
 }

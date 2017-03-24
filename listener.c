@@ -34,6 +34,7 @@
 
 #define default_group "ff3e::"
 char **addrs = NULL;
+char program_usage[] = "usage: %s [--addr multicast address] [--port port] [--grp groupname] [--src source address]\n";
 int groups = 0;
 char *port = "4242";
 char *groupname = NULL;
@@ -43,12 +44,6 @@ void exit_program(int ret)
 {
 	free(addrs);
         _exit(ret);
-}
-
-void print_usage(char *prog, int ret)
-{
-	printf("usage: %s [--addr multicast address] [--port port] [--grp groupname] [--src source address]\n", prog);
-	_exit(ret);
 }
 
 void getaddrinfo_error(int e)
@@ -89,16 +84,6 @@ void process_args(int argc, char **argv)
 
         if (argc > 1) {
                 for (i = 1; i < argc; ++i) process_arg(&i, argv);
-        }
-}
-
-void sig_handler(int signo)
-{
-        switch (signo) {
-        case SIGINT:
-                exit_program(0);
-        default:
-                break;
         }
 }
 

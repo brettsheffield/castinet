@@ -18,6 +18,23 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef __CASTINET_CASTINET_H__
+#define __CASTINET_CASTINET_H__ 1
+
+char **addrs;
+extern char program_usage[];
+
+/* exit program with status */
+void exit_program(int ret);
+
 /* hash groupname and XOR with baseaddr to give hashaddr
  * return 0 on success */
 int hashgroup(char *baseaddr, char *groupname, char *hashaddr);
+
+/* print program usage and exit */
+void print_usage(char *prog, int ret);
+
+/* catch signals */
+void sig_handler(int signo);
+
+#endif /* __CASTINET_CASTINET_H__ */

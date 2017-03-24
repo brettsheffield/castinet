@@ -30,6 +30,7 @@
 #include <unistd.h>
 #include "castinet.h"
 
+char program_usage[] = "usage: %s [--addr multicast address] [--port multicast port] [--grp groupname] [--ttl ttl] [--loop 0|1] [--delay seconds] message\n";
 char *addr = "ff3e::";
 char *port = "4242";
 char *msg = NULL;
@@ -62,12 +63,6 @@ long go_long(char *s)
 		return strtol(s, NULL, 10);
 	}
 	return -1;
-}
-
-void print_usage(char *prog, int ret)
-{
-	printf("usage: %s [--addr multicast address] [--port multicast port] [--grp groupname] [--ttl ttl] [--loop 0|1] [--delay seconds] message\n", prog);
-	_exit(ret);
 }
 
 void process_arg(int *i, char **argv)
@@ -132,16 +127,6 @@ void process_args(int argc, char **argv)
 	}
 	if (msg == NULL) {
 		print_usage(argv[0], 1);
-	}
-}
-
-void sig_handler(int signo)
-{
-	switch (signo) {
-	case SIGINT:
-		exit_program(0);
-	default:
-		break;
 	}
 }
 
