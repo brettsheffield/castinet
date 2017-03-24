@@ -55,7 +55,7 @@ int hashgroup(char *baseaddr, char *groupname, char *hashaddr)
 
 void print_usage(char *prog, int ret)
 {
-        printf(program_usage);
+        printf("%s", program_usage);
         _exit(ret);
 }
 
