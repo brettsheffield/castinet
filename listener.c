@@ -99,9 +99,13 @@ int main(int argc, char **argv)
 	struct addrinfo hints = {0};
 	struct ipv6_mreq req;
 	struct group_source_req grp;
+	struct iovec iov;
+	struct msghdr msgh;
 	char buf[1024];
 	char *addr;
 	char txtaddr[INET6_ADDRSTRLEN];
+	struct sockaddr_in from;
+	socklen_t fromlen = sizeof(from);
 
 	process_args(argc, argv);
 
@@ -195,7 +199,18 @@ int main(int argc, char **argv)
 	freeaddrinfo(localaddr);
 
 	for (;;) {
-		l = recvfrom(s_in, buf, sizeof(buf)-1, 0, NULL, NULL);
+		memset(&msgh, 0, sizeof(struct msghdr));
+		iov.iov_base = buf;
+		iov.iov_len = sizeof(buf)-1;
+		msgh.msg_control = buf;
+		msgh.msg_controllen = sizeof(buf)-1;
+		msgh.msg_name = &from;
+		msgh.msg_namelen = fromlen;
+		msgh.msg_iov = &iov;
+		msgh.msg_iovlen = 1;
+		msgh.msg_flags = 0;
+
+		l = recvmsg(s_in, &msgh, 0);
 		buf[l] = '\0';
 		printf("%s\n", buf);
 	}
