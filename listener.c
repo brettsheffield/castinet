@@ -20,6 +20,7 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <arpa/inet.h>
 #include <net/if.h>
 #include <netdb.h>
 #include <netinet/in.h>
@@ -106,6 +107,11 @@ int main(int argc, char **argv)
 	char txtaddr[INET6_ADDRSTRLEN];
 	struct sockaddr_in from;
 	socklen_t fromlen = sizeof(from);
+	struct cmsghdr *cmsg;
+	struct in6_pktinfo *pi;
+	struct in6_addr da;
+	char dstaddr[INET6_ADDRSTRLEN];
+
 
 	process_args(argc, argv);
 
@@ -195,6 +201,10 @@ int main(int argc, char **argv)
 		freeaddrinfo(castaddr);
 	}
 
+	/* request ancilliary control data */
+	l = 1;
+	setsockopt(s_in, IPPROTO_IPV6, IPV6_RECVPKTINFO, &l, sizeof(l));
+
 	freeaddrinfo(srcaddr);
 	freeaddrinfo(localaddr);
 
@@ -211,8 +221,24 @@ int main(int argc, char **argv)
 		msgh.msg_flags = 0;
 
 		l = recvmsg(s_in, &msgh, 0);
+
+		dstaddr[0] = '\0';
+		for (cmsg = CMSG_FIRSTHDR(&msgh);
+		     cmsg != NULL;
+		     cmsg = CMSG_NXTHDR(&msgh, cmsg))
+		{
+			if ((cmsg->cmsg_level == IPPROTO_IPV6)
+			  && (cmsg->cmsg_type == IPV6_PKTINFO))
+			{
+				pi = (struct in6_pktinfo *) CMSG_DATA(cmsg);
+				da = pi->ipi6_addr;
+				inet_ntop(AF_INET6, &da, dstaddr, INET6_ADDRSTRLEN);
+				break;
+			}
+		}
+
 		buf[l] = '\0';
-		printf("%s\n", buf);
+		printf("[%s] %s\n", dstaddr, buf);
 	}
 
 	/* not reached */
