@@ -103,6 +103,7 @@ int main(int argc, char **argv)
 	struct iovec iov;
 	struct msghdr msgh;
 	char buf[1024];
+	char cmsgbuf[1024];
 	char *addr;
 	char txtaddr[INET6_ADDRSTRLEN];
 	struct sockaddr_in from;
@@ -212,8 +213,8 @@ int main(int argc, char **argv)
 		memset(&msgh, 0, sizeof(struct msghdr));
 		iov.iov_base = buf;
 		iov.iov_len = sizeof(buf)-1;
-		msgh.msg_control = buf;
-		msgh.msg_controllen = sizeof(buf)-1;
+		msgh.msg_control = cmsgbuf;
+		msgh.msg_controllen = sizeof(cmsgbuf);
 		msgh.msg_name = &from;
 		msgh.msg_namelen = fromlen;
 		msgh.msg_iov = &iov;
