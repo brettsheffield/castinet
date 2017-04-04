@@ -88,6 +88,52 @@ void process_args(int argc, char **argv)
         }
 }
 
+int handle_msg(int sock, char *dstaddr, char *data)
+{
+	struct iovec iov;
+	struct msghdr msgh;
+	char cmsgbuf[1024];
+	struct sockaddr_in from;
+	socklen_t fromlen = sizeof(from);
+	struct cmsghdr *cmsg;
+	struct in6_pktinfo *pi;
+	struct in6_addr da;
+	int l;
+
+	memset(&msgh, 0, sizeof(struct msghdr));
+	iov.iov_base = data;
+	iov.iov_len = sizeof(data);
+	msgh.msg_control = cmsgbuf;
+	msgh.msg_controllen = sizeof(cmsgbuf);
+	msgh.msg_name = &from;
+	msgh.msg_namelen = fromlen;
+	msgh.msg_iov = &iov;
+	msgh.msg_iovlen = 1;
+	msgh.msg_flags = 0;
+
+	l = recvmsg(sock, &msgh, 0);
+
+	if (l > 0) {
+		dstaddr[0] = '\0';
+		for (cmsg = CMSG_FIRSTHDR(&msgh);
+		     cmsg != NULL;
+		     cmsg = CMSG_NXTHDR(&msgh, cmsg))
+		{
+			if ((cmsg->cmsg_level == IPPROTO_IPV6)
+			  && (cmsg->cmsg_type == IPV6_PKTINFO))
+			{
+				pi = (struct in6_pktinfo *) CMSG_DATA(cmsg);
+				da = pi->ipi6_addr;
+				inet_ntop(AF_INET6, &da, dstaddr, INET6_ADDRSTRLEN);
+				break;
+			}
+		}
+		data[l] = '\0';
+	}
+
+	return l;
+}
+
 int main(int argc, char **argv)
 {
 	int s_in;
@@ -100,17 +146,9 @@ int main(int argc, char **argv)
 	struct addrinfo hints = {0};
 	struct ipv6_mreq req;
 	struct group_source_req grp;
-	struct iovec iov;
-	struct msghdr msgh;
 	char buf[1024];
-	char cmsgbuf[1024];
 	char *addr;
 	char txtaddr[INET6_ADDRSTRLEN];
-	struct sockaddr_in from;
-	socklen_t fromlen = sizeof(from);
-	struct cmsghdr *cmsg;
-	struct in6_pktinfo *pi;
-	struct in6_addr da;
 	char dstaddr[INET6_ADDRSTRLEN];
 
 
@@ -210,36 +248,9 @@ int main(int argc, char **argv)
 	freeaddrinfo(localaddr);
 
 	for (;;) {
-		memset(&msgh, 0, sizeof(struct msghdr));
-		iov.iov_base = buf;
-		iov.iov_len = sizeof(buf)-1;
-		msgh.msg_control = cmsgbuf;
-		msgh.msg_controllen = sizeof(cmsgbuf);
-		msgh.msg_name = &from;
-		msgh.msg_namelen = fromlen;
-		msgh.msg_iov = &iov;
-		msgh.msg_iovlen = 1;
-		msgh.msg_flags = 0;
-
-		l = recvmsg(s_in, &msgh, 0);
-
-		dstaddr[0] = '\0';
-		for (cmsg = CMSG_FIRSTHDR(&msgh);
-		     cmsg != NULL;
-		     cmsg = CMSG_NXTHDR(&msgh, cmsg))
-		{
-			if ((cmsg->cmsg_level == IPPROTO_IPV6)
-			  && (cmsg->cmsg_type == IPV6_PKTINFO))
-			{
-				pi = (struct in6_pktinfo *) CMSG_DATA(cmsg);
-				da = pi->ipi6_addr;
-				inet_ntop(AF_INET6, &da, dstaddr, INET6_ADDRSTRLEN);
-				break;
-			}
+		if (handle_msg(s_in, dstaddr, buf) > 0) {
+			printf("[%s] %s\n", dstaddr, buf);
 		}
-
-		buf[l] = '\0';
-		printf("[%s] %s\n", dstaddr, buf);
 	}
 
 	/* not reached */
