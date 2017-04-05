@@ -44,7 +44,7 @@ int hashgroup(char *baseaddr, char *groupname, char *hashaddr)
 		/* we have 112 bits (14 bytes) available for the group address
 		 * XOR the hashed group with the base multicast address */
 		for (i = 0; i < 14; i++) {
-			binaddr[i+4] ^= hashgrp[i];
+			binaddr[i+2] ^= hashgrp[i];
 		}
 
 		inet_ntop(AF_INET6, binaddr, hashaddr, INET6_ADDRSTRLEN);
