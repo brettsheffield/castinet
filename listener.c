@@ -40,6 +40,7 @@ int groups = 0;
 char *port = "4242";
 char *groupname = NULL;
 char *src = NULL;
+unsigned int loglevel = 15;
 
 void exit_program(int ret)
 {
@@ -49,7 +50,7 @@ void exit_program(int ret)
 
 void getaddrinfo_error(int e)
 {
-	printf("getaddrinfo error: %i\n", e);
+	logmsg(LOG_ERROR, "getaddrinfo error: %i", e);
 }
 
 void process_arg(int *i, char **argv)
@@ -64,12 +65,15 @@ void process_arg(int *i, char **argv)
                 addrs = realloc(addrs, sizeof(addrs) + sizeof(char *));
                 addrs[groups++] = addr;
         }
+	else if (strcmp(argv[*i], "--debug") == 0) {
+		loglevel = 127;
+	}
         else if (strcmp(argv[*i], "--port") == 0) {
                 port = argv[++(*i)];
         }
 	else if (strcmp(argv[*i], "--grp") == 0) {
 		groupname = argv[++(*i)];
-	        printf("group: %s\n", groupname);
+	        logmsg(LOG_INFO, "group: %s", groupname);
 	}
         else if (strcmp(argv[*i], "--src") == 0) {
                 src = argv[++(*i)];
@@ -207,7 +211,7 @@ int main(int argc, char **argv)
 			goto main_fail;
 		}
 		if (src) {
-			printf("SSM mode (source: %s) joining %s\n", src, addr);
+			logmsg(LOG_INFO, "SSM mode (source: %s) joining %s", src, addr);
 			memset(&grp, 0, sizeof(grp));
 			memcpy(&grp.gsr_group,
 					(struct sockaddr_in6*)(castaddr->ai_addr),
@@ -224,7 +228,7 @@ int main(int argc, char **argv)
 			}
 		}
 		else {
-			printf("ASM mode join %s\n", addr);
+			logmsg(LOG_INFO, "ASM mode join %s", addr);
 			memcpy(&req.ipv6mr_multiaddr,
 				&((struct sockaddr_in6*)(castaddr->ai_addr))->sin6_addr,
 				sizeof(req.ipv6mr_multiaddr));
@@ -249,7 +253,7 @@ int main(int argc, char **argv)
 
 	for (;;) {
 		if (handle_msg(s_in, dstaddr, buf) > 0) {
-			printf("[%s] %s\n", dstaddr, buf);
+			logmsg(LOG_INFO, "[%s] %s", dstaddr, buf);
 		}
 	}
 

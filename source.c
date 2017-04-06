@@ -39,6 +39,7 @@ char *tmp;
 long ttl = 9;
 long loop = 1;
 long delay = 1;
+unsigned loglevel = 15;
 
 void exit_program(int ret)
 {
@@ -73,12 +74,15 @@ void process_arg(int *i, char **argv)
 	else if (strcmp(argv[*i], "--addr") == 0) {
 		addr = argv[++(*i)];
 	}
+	else if (strcmp(argv[*i], "--debug") == 0) {
+		loglevel = 127;
+	}
 	else if (strcmp(argv[*i], "--port") == 0) {
 		port = argv[++(*i)];
 	}
 	else if (strcmp(argv[*i], "--grp") == 0) {
 		grp = argv[++(*i)];
-		printf("group: %s\n", grp);
+		logmsg(LOG_INFO, "group: %s", grp);
 	}
 	else if (strcmp(argv[*i], "--ttl") == 0) {
 		ttl = go_long(argv[++(*i)]);
@@ -121,7 +125,7 @@ void process_args(int argc, char **argv)
 					strcat(msg, " ");
 				}
 				msg[l-1] = '\0';
-				printf("msg: %s\n", msg);
+				logmsg(LOG_DEBUG, "msg: %s", msg);
 			}
 		}
 	}
@@ -152,7 +156,7 @@ int main(int argc, char **argv)
 	if (grp)
 		addr = txtaddr;
 
-	printf("multicast address %s\n", addr);
+	logmsg(LOG_DEBUG, "multicast address %s", addr);
 
 	if (getaddrinfo(addr, port, &hints, &castaddr) != 0) {
 		perror("getaddrinfo (out)");
