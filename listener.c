@@ -35,16 +35,21 @@
 
 #define default_group "ff3e::"
 char **addrs = NULL;
+char *relayaddr;
+struct addrinfo *relaycast = NULL;
 char program_usage[] = "usage: %s [--addr multicast address] [--port port] [--grp groupname] [--src source address]\n";
 int groups = 0;
+int relay = 0;
 char *port = "4242";
 char *groupname = NULL;
 char *src = NULL;
 unsigned int loglevel = 15;
+long ttl = 9;
 
 void exit_program(int ret)
 {
 	free(addrs);
+	freeaddrinfo(relaycast);
         _exit(ret);
 }
 
@@ -74,6 +79,11 @@ void process_arg(int *i, char **argv)
 	else if (strcmp(argv[*i], "--grp") == 0) {
 		groupname = argv[++(*i)];
 	        logmsg(LOG_INFO, "group: %s", groupname);
+	}
+	else if (strcmp(argv[*i], "--relay") == 0) {
+		relay = 1;
+		relayaddr = argv[++(*i)];
+	        logmsg(LOG_INFO, "relay address: %s", relayaddr);
 	}
         else if (strcmp(argv[*i], "--src") == 0) {
                 src = argv[++(*i)];
@@ -135,12 +145,29 @@ int handle_msg(int sock, char *dstaddr, char *data)
 		data[l] = '\0';
 	}
 
+	if (relay) {
+		logmsg(LOG_DEBUG, "relaying packet to %s", relayaddr);
+		logmsg(LOG_DEBUG, "packet arrived on ifindex=%i", pi->ipi6_ifindex);
+		sendto(sock, data, strlen(data), 0, relaycast->ai_addr,
+				relaycast->ai_addrlen);
+	}
+
 	return l;
+}
+
+int getrelayaddrinfo(char *relayaddr, char *port)
+{
+	struct addrinfo hints = {0};
+	if (getaddrinfo(relayaddr, port, &hints, &relaycast) != 0) {
+		perror("getaddrinfo - relay addr");
+		return -1;
+	}
+	return 0;
 }
 
 int main(int argc, char **argv)
 {
-	int s_in;
+	int sock;
 	int l;
 	int e;
 	int g;
@@ -173,13 +200,31 @@ int main(int argc, char **argv)
 	}
 
 	/* create inbound datagram socket */
-	s_in = socket(localaddr->ai_family, localaddr->ai_socktype, 0);
-	if (s_in == -1) {
+	sock = socket(localaddr->ai_family, localaddr->ai_socktype, 0);
+	if (sock == -1) {
 		perror("socket (in)");
 		goto main_fail;
 	}
 
-	if (bind(s_in, localaddr->ai_addr, localaddr->ai_addrlen) != 0) {
+	if (relay) {
+		logmsg(LOG_INFO, "relay mode enabled");
+
+		if (getrelayaddrinfo(relayaddr, port) != 0) {
+			logmsg(LOG_ERROR, "invalid --relay address");
+			goto main_fail;
+		}
+
+		/* we're sending, so set TTL */
+		l = ttl;
+		if (setsockopt(sock, IPPROTO_IPV6, IPV6_MULTICAST_HOPS, &l,
+					sizeof(l)) != 0)
+		{
+			perror("ttl");
+			goto main_fail;
+		}
+	}
+
+	if (bind(sock, localaddr->ai_addr, localaddr->ai_addrlen) != 0) {
 		perror("bind");
 		goto main_fail;
 	}
@@ -220,7 +265,7 @@ int main(int argc, char **argv)
 					(struct sockaddr_in6*)(srcaddr->ai_addr),
 					sizeof(struct sockaddr_in6));
 			grp.gsr_interface = 0;
-			if (setsockopt(s_in, IPPROTO_IPV6, MCAST_JOIN_SOURCE_GROUP,
+			if (setsockopt(sock, IPPROTO_IPV6, MCAST_JOIN_SOURCE_GROUP,
 				&grp, sizeof(grp)) == -1)
 			{
 				perror("multicast join");
@@ -234,7 +279,7 @@ int main(int argc, char **argv)
 				sizeof(req.ipv6mr_multiaddr));
 
 			req.ipv6mr_interface = 0; /* default interface */
-			if (setsockopt(s_in, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP,
+			if (setsockopt(sock, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP,
 				&req, sizeof(req)) != 0)
 			{
 				perror("multicast join");
@@ -246,13 +291,13 @@ int main(int argc, char **argv)
 
 	/* request ancilliary control data */
 	l = 1;
-	setsockopt(s_in, IPPROTO_IPV6, IPV6_RECVPKTINFO, &l, sizeof(l));
+	setsockopt(sock, IPPROTO_IPV6, IPV6_RECVPKTINFO, &l, sizeof(l));
 
 	freeaddrinfo(srcaddr);
 	freeaddrinfo(localaddr);
 
 	for (;;) {
-		if (handle_msg(s_in, dstaddr, buf) > 0) {
+		if (handle_msg(sock, dstaddr, buf) > 0) {
 			logmsg(LOG_INFO, "[%s] %s", dstaddr, buf);
 		}
 	}
