@@ -34,6 +34,7 @@
 #include "castinet.h"
 
 #define default_group "ff3e::"
+#define BUFSIZE 1024
 char **addrs = NULL;
 char *relayaddr;
 struct addrinfo *relaycast = NULL;
@@ -102,11 +103,11 @@ void process_args(int argc, char **argv)
         }
 }
 
-int handle_msg(int sock, char *dstaddr, char *data)
+int handle_msg(int sock, char *dstaddr, char *data, int data_len)
 {
 	struct iovec iov;
 	struct msghdr msgh;
-	char cmsgbuf[1024];
+	char cmsgbuf[data_len];
 	struct sockaddr_in from;
 	socklen_t fromlen = sizeof(from);
 	struct cmsghdr *cmsg;
@@ -116,9 +117,9 @@ int handle_msg(int sock, char *dstaddr, char *data)
 
 	memset(&msgh, 0, sizeof(struct msghdr));
 	iov.iov_base = data;
-	iov.iov_len = sizeof(data);
+	iov.iov_len = data_len - 1;
 	msgh.msg_control = cmsgbuf;
-	msgh.msg_controllen = sizeof(cmsgbuf);
+	msgh.msg_controllen = data_len - 1;
 	msgh.msg_name = &from;
 	msgh.msg_namelen = fromlen;
 	msgh.msg_iov = &iov;
@@ -177,7 +178,7 @@ int main(int argc, char **argv)
 	struct addrinfo hints = {0};
 	struct ipv6_mreq req;
 	struct group_source_req grp;
-	char buf[1024];
+	char buf[BUFSIZE];
 	char *addr;
 	char txtaddr[INET6_ADDRSTRLEN];
 	char dstaddr[INET6_ADDRSTRLEN];
@@ -297,7 +298,7 @@ int main(int argc, char **argv)
 	freeaddrinfo(localaddr);
 
 	for (;;) {
-		if (handle_msg(sock, dstaddr, buf) > 0) {
+		if (handle_msg(sock, dstaddr, buf, BUFSIZE) > 0) {
 			logmsg(LOG_INFO, "[%s] %s", dstaddr, buf);
 		}
 	}
