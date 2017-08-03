@@ -41,4 +41,4 @@ castinet.o: castinet.c castinet.h
 .PHONY: clean
 
 clean:
-	rm listener castinet *.o
+	rm -f listener castinet *.o
