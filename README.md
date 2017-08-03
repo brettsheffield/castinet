@@ -24,6 +24,12 @@ Multiple multicast groups can be joined by supplying more than one --addr argume
 
 the groupname is hashed to find the multicast group to join
 
+## Debian/Ubuntu
+
+Requires:
+
+`libssl-dev`
+
 
 Brett Sheffield `<brett@gladserv.com>`
 
